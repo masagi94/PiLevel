@@ -71,3 +71,69 @@ void ButtonISR(){
 		printf("radians\n");
 	}
 }
+
+
+
+/* 
+	This function will print out the values we get from the accelerometer
+	to the LCD according to the mode we're in. If the mode is 0, the LCD will
+	print out degrees. If mode = 1, it will print radians.
+	
+	ex. mode = 0
+	 _______________
+	|     Level     |             
+	|  + 155 deg    |
+	|_______________|
+	 
+	ex. mode = 1
+	 _______________
+	|     Level     |             
+	|  - 3.14 rad   |
+	|_______________|
+
+	To print values, we have to convert the degrees or radians to a char[], so 
+	that we may display it on the LCD. The if-statements handle that logic, as 
+	well as the string concatenation to display in the correct format.
+*/
+void updateLCD(){
+    char displayValue[10] = "";
+	char num[5] = "";
+	char radDeg[4] = "";
+
+
+	if (mode == 0){
+		if(nDeg < 0){
+			nDeg = nDeg * -1;
+			strcat(displayValue, "- ");
+		}
+		else
+			strcat(displayValue, "+ ");
+    	
+    	sprintf(num, "%d", nDeg);
+    	strcat(displayValue, num);
+    	strcat(radDeg, " deg");
+	}
+	else{
+		if(nRad < 0){
+			nRad = nRad * -1;
+			strcat(displayValue, "- ");
+		}
+		else
+			strcat(displayValue, "+ ");
+		
+		sprintf(num, "%0.2f", nRad);
+		strcat(displayValue, num);
+		strcat(radDeg, " rad");
+	}
+
+
+	strcat(displayValue, radDeg);
+	
+	// Clear the lcd, and then update the value.
+    lcdPosition(fd2, 0, 1);
+    lcdPrintf(fd2, "%s", "                ");
+    lcdPosition(fd2, 2, 1);
+    lcdPrintf(fd2, "%s", displayValue);
+
+    delay(100);
+}
