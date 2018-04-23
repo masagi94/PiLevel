@@ -72,7 +72,47 @@ void ButtonISR(){
 	}
 }
 
-void getAngle(){}
+/* 
+	This function gets new readings from the accelerometer (x,y), rounds them to the
+	nearest integer, and converts them to degrees and radians. The ruler with the 
+	accelerometer can face 4 different quadrants of a circle, so to know which location
+	it's currently facing so that we may edit the sign of the values accordingly, we use
+	both the y and x-values of the accelerometer. In the if-statements,	comment out the 
+	first line,	and uncomment the second one, if you want to display in increments of 
+	5 degrees instead of 1 degree.
+*/
+void getAngle(){
+	float x = axis_sample(X_REG,fd1) / 128.0;
+	float y = axis_sample(Y_REG,fd1) / 128.0;
+	float xDeg = (x*90) / 2;
+	float newXDeg1 = 180 - xDeg;
+	float newXDeg2 = (180 + xDeg) * -1;
+
+	double roundedX = 0;
+
+	
+	if(x >= 0 && y >= 0){
+		roundedX = round(xDeg);
+		//roundedX = round(xDeg/5)*5;
+	}
+	else if (x >= 0 && y <= 0){
+		roundedX = round(newXDeg1);
+		//roundedX = round(newXDeg1/5)*5;
+	}
+	else if (x <= 0 && y <= 0){
+		roundedX = round(xDeg);
+		//roundedX = round(xDeg/5)*5;
+	}
+	else if (x <= 0 && y >= 0){
+		roundedX = round(newXDeg2);
+		//roundedX = round(newXDeg2/5)*5;
+	}
+
+	nDeg = roundedX;
+	nRad = nDeg * (3.14/180.0);
+}
+
+
 
 /* 
 	This function will print out the values we get from the accelerometer
@@ -137,6 +177,8 @@ void updateLCD(){
 
     delay(100);
 }
+
+
 
 short int axis_sample(int axis,int fd)
 {
