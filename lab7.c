@@ -72,7 +72,7 @@ void ButtonISR(){
 	}
 }
 
-
+void getAngle(){}
 
 /* 
 	This function will print out the values we get from the accelerometer
@@ -136,4 +136,89 @@ void updateLCD(){
     lcdPrintf(fd2, "%s", displayValue);
 
     delay(100);
+}
+
+short int axis_sample(int axis,int fd)
+{
+	short int data = 0;
+	short int data2 = 0;
+
+	usleep(10000);
+	data  =  wiringPiI2CReadReg8(fd,axis);
+	data2 =  wiringPiI2CReadReg8(fd,axis+1); 
+	
+	return ( (data2<<8)|data );
+}
+
+short int axis_sample_average(int axis, int fd)
+{
+	int c = 10;
+	int value = 0;
+
+	while(c--){
+		value += axis_sample(axis, fd);
+	}
+
+	return ( value/10 );
+}
+
+
+/* 
+	This sets up the wiringPi pins, as well as the accelerometer,
+	the LCD, and the button attached to the raspberry pi.
+*/
+int configure(){
+	
+	// ***** Sets up wiring pi and the lcd *****
+	wiringPiSetup();
+	
+    if(wiringPiSetup() == -1){
+        printf("setup wiringPi failed !\n");
+        return -1;
+    }
+	
+	fd2 = lcdInit(2,16,4, 5,4, 0,1,2,3,4,5,6,7);
+    //lcdClear(fd);
+    if (fd2 == -1){
+        printf ("lcdInit failed\n") ;
+        return 1;
+    }
+
+
+	// ***** Configures the accelerometer for use. *****
+
+	fd1 = wiringPiI2CSetup(0x53);
+
+	datasimple = wiringPiI2CReadReg8(fd1,0x31);
+	wiringPiI2CWriteReg8(fd1,0x31,datasimple|0xb);
+
+	wiringPiI2CWriteReg8(fd1,0x2d,0x08); //POWER_CTL	
+	usleep(11000);
+	// erase offset bits
+	wiringPiI2CWriteReg8(fd1,0x1e,0);
+	wiringPiI2CWriteReg8(fd1,0x1f,0);
+	wiringPiI2CWriteReg8(fd1,0x20,0);
+	usleep(11000);
+	// calibrate X axis
+	data = axis_sample_average(X_REG,fd1);
+	wiringPiI2CWriteReg8(fd1,0x1e,-(data / 4));
+	// calibrate Y axis
+	data = axis_sample_average(Y_REG,fd1);
+	wiringPiI2CWriteReg8(fd1,0x1f,-(data / 4));
+	// calibrate Z axis
+	data = axis_sample_average(Z_REG,fd1);
+	wiringPiI2CWriteReg8(fd1,0x20,-((data - 256 ) / 4));
+
+
+	// configures the  button
+	pinMode(BUTTON, INPUT);
+
+	// use pull-up resistors for button
+	pullUpDnControl(BUTTON, PUD_UP);
+
+	// configure ISR for button press
+	wiringPiISR(BUTTON, INT_EDGE_FALLING, ButtonISR);
+
+
+	usleep(100000);
 }
